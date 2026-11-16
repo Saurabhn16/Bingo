@@ -1,24 +1,14 @@
-﻿<<<<<<< HEAD
-const socket = io("https://bingo-512e.onrender.com");
-=======
-ï»¿// Update BINGO letters and the current player's name.
+﻿const socket = io("https://bingo-512e.onrender.com");
+
+// Update BINGO letters only. Player names stay normal.
+// Update BINGO letters only. Player names stay normal.
 function updateBingoLetters(lineCount) {
   const count = Math.max(0, Math.min(5, Number(lineCount) || 0));
 
   document.querySelectorAll("#bingoLetters span").forEach((letter, index) => {
     letter.classList.toggle("completed", index < count);
   });
-
-  const myCard = document.querySelector(".player-card.you");
-  const myName = myCard?.querySelector("strong");
-
-  if (myName) {
-    myName.classList.toggle("player-completed", count > 0);
-  }
 }
-
-const socket = io();
->>>>>>> 4bc70cf (Improve Bingo Arena UI and responsive design)
 const $ = id => document.getElementById(id);
 let board = Array.from({ length: 25 }, (_, i) => i + 1);
 let room = null;
@@ -478,6 +468,8 @@ socket.on("disconnect", () => {
 shuffleBoard();
 $("setup").hidden = false;
 $("game").hidden = true;
+
+
 
 
 

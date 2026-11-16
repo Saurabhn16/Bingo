@@ -343,14 +343,7 @@ io.on("connection", socket => {
 });
 
 const PORT = process.env.PORT || 3000;
-<<<<<<< HEAD
 server.listen(PORT, "0.0.0.0", () => {
   console.log("GameZone running on port " + PORT);
-=======
-
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("Bingo server running on port " + PORT);
->>>>>>> 4bc70cf (Improve Bingo Arena UI and responsive design)
 });
-
 
