@@ -1,0 +1,111 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111329">
+  <title>Dots & Boxes | GameZone</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/"> <span class="brand-mark">âœ£</span><span>GAMEZONE<small>DOTS & BOXES</small></span></a>
+      <div class="top-actions"><span id="connection" class="connection"><i></i> Connecting</span><a class="back-link" href="/">â† GameZone</a></div>
+    </header>
+
+    <section id="homeScreen" class="screen home-screen">
+      <div class="hero">
+        <span class="eyebrow">MULTIPLAYER ARENA Â· 2â€“10 PLAYERS</span>
+        <h1>Connect the dots.<br><span>Claim the boxes.</span></h1>
+        <p>Create a room, invite your friends and compete to claim the most boxes.</p>
+      </div>
+      <div class="home-grid">
+        <article class="panel">
+          <div class="panel-icon">ï¼‹</div><h2>Create a room</h2>
+          <p>Set the board size and choose how many friends can join.</p>
+          <form id="createForm">
+            <label>Your nickname<input id="createName" maxlength="20" placeholder="Enter nickname" required></label>
+            <div class="color-field"><span class="color-label">Choose your player color</span><div id="createColorPicker" class="color-picker" role="group" aria-label="Choose your player color"></div><input id="createColor" type="hidden" value="#A78BFA"></div>
+            <div class="form-row">
+              <label>Board size<select id="boardSize">
+            <option value="2">2 × 2</option><option value="5">5 Ã— 5</option><option value="6">6 Ã— 6</option><option value="7">7 Ã— 7</option><option value="8" selected>8 Ã— 8</option><option value="9">9 Ã— 9</option><option value="10">10 Ã— 10</option></select></label>
+              <label>Player limit<select id="playerLimit"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option></select></label>
+            </div>
+            <button class="btn primary" type="submit">Create room <span>â†’</span></button>
+          </form>
+        </article>
+        <article class="panel join-panel">
+          <div class="panel-icon blue">â†—</div><h2>Join a room</h2>
+          <p>Already have an invite? Enter the room code and jump in.</p>
+          <form id="joinForm">
+            <label>Your nickname<input id="joinName" maxlength="20" placeholder="Enter nickname" required></label>
+            <div class="color-field"><span class="color-label">Choose your player color</span><div id="joinColorPicker" class="color-picker" role="group" aria-label="Choose your player color"></div><input id="joinColor" type="hidden" value="#A78BFA"></div>
+            <label>Room code<input id="roomCode" maxlength="6" placeholder="e.g. A1B2C3" class="code-input" required></label>
+            <button class="btn secondary" type="submit">Join room <span>â†’</span></button>
+          </form>
+        </article>
+      </div>
+      <p id="homeError" class="error-message" role="alert"></p>
+    </section>
+
+    <section id="lobbyScreen" class="screen hidden">
+      <div class="section-heading"><div><span class="eyebrow">ROOM LOBBY</span><h1>Ready to play?</h1></div><span class="status-pill waiting">Waiting for players</span></div>
+      <div class="lobby-layout">
+        <article class="panel room-card">
+          <span class="muted-label">SHARE THIS ROOM CODE</span>
+          <div class="room-code-row"><strong id="lobbyCode">------</strong><button id="copyCode" class="icon-btn" type="button" title="Copy room code">Copy</button></div>
+          <div class="room-settings"><div><small>BOARD SIZE</small><strong id="lobbySize">8 Ã— 8</strong></div><div><small>PLAYER LIMIT</small><strong id="lobbyLimit">10 players</strong></div></div>
+          <div class="invite-note">Share the code with friends. The room closes to new players when the match starts.</div>
+          <button id="startGame" class="btn primary full hidden" type="button">Start game <span>â†’</span></button>
+          <p id="lobbyHint" class="hint"></p>
+        </article>
+        <article class="panel players-card">
+          <div class="card-heading"><div><h2>Players</h2><p id="playerCount">1 / 10 joined</p></div><span class="live-dot">â— LIVE</span></div>
+          <div id="lobbyPlayers" class="player-list"></div>
+        </article>
+      </div>
+      <button id="leaveLobby" class="text-btn" type="button">â† Leave room</button>
+    </section>
+
+    <section id="gameScreen" class="screen hidden">
+      <div class="game-heading">
+        <div><span class="eyebrow">ROOM <b id="gameRoomCode">------</b></span><h1>Dots <span>&</span> Boxes</h1></div>
+        <div class="game-heading-actions"><span id="gameStatus" class="status-pill playing">In progress</span><button id="leaveGame" class="icon-btn" type="button">Leave</button></div>
+      </div>
+      <div class="score-section">
+        <div class="score-title"><span>LIVE SCORES</span><small id="scorePlayerCount">0 players</small></div>
+        <div id="scoreboard" class="scoreboard"></div>
+      </div>
+      <div class="turn-banner" id="turnBanner"><span class="turn-indicator"></span><strong>Waiting for game stateâ€¦</strong></div>
+      <div class="play-layout">
+        <article class="panel board-panel">
+          <div class="board-toolbar"><div><strong id="boardTitle">8 Ã— 8 board</strong><small id="boardProgress">0 / 64 boxes claimed</small></div><span id="moveCount" class="muted-label">0 moves</span></div>
+          <div class="board-wrap"><div id="gameBoard" class="game-board" aria-label="Dots and Boxes game board"></div></div>
+          <div class="board-legend"><span><i class="legend-dot purple"></i>Your color</span><span>Tap a line between dots to claim it</span></div>
+        </article>
+        <aside class="side-column">
+          <article class="panel activity-panel"><div class="card-heading"><h2>Game activity</h2><span class="live-dot">â— LIVE</span></div><div id="activity" class="activity-list"><p class="empty-state">Moves will appear here.</p></div></article>
+          <article class="panel chat-panel"><div class="card-heading"><h2>Room chat</h2></div><div id="chatMessages" class="chat-messages"></div><form id="chatForm" class="chat-form"><input id="chatInput" maxlength="180" placeholder="Say somethingâ€¦" autocomplete="off"><button type="submit" aria-label="Send message">â†‘</button></form></article>
+        </aside>
+      </div>
+      <div id="resultPanel" class="panel result-panel hidden"><div class="result-confetti">âœ¦</div><span class="eyebrow">GAME COMPLETE</span><h2 id="resultTitle">Game over!</h2><p id="resultText"></p><div id="finalScores" class="final-scores"></div><div id="rematchPanel" class="rematch-panel">
+  <h3>Play another round?</h3>
+  <p id="rematchStatus">Request a rematch and invite everyone to vote.</p>
+  <div id="rematchVotes" class="rematch-votes"></div>
+  <div class="rematch-actions">
+    <button id="requestRematch" class="btn primary" type="button">Play Again ↻</button>
+    <button id="acceptRematch" class="btn primary hidden" type="button">Accept</button>
+    <button id="declineRematch" class="btn secondary hidden" type="button">Decline</button>
+  </div>
+</div><button id="backHome" class="btn secondary" type="button">Back to GameZone</button></div>
+    </section>
+    <div id="toast" class="toast" role="status"></div>
+    <footer>Made for friends, wherever they are. <span>GAMEZONE</span></footer>
+  </main>
+</body>
+</html>
+
+
