@@ -1,6 +1,5 @@
-﻿const socket = io();
+const socket = io("https://bingo-512e.onrender.com");
 const $ = id => document.getElementById(id);
-
 let board = Array.from({ length: 25 }, (_, i) => i + 1);
 let roomCode = null;
 let playerId = null;
