@@ -1,5 +1,5 @@
 (() => {
-  const socket = io(https://bingo-512e.onrender.com/);
+const socket = io("https://bingo-512e.onrender.com/");
   const $ = id => document.getElementById(id);
   const screens = ["lobby","waiting","game","result"];
   let state = null, roomCode = null, playerId = null, selectedLetter = "S";
