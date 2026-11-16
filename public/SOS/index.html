@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOS Arena | GameZone</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <a class="brand" href="/">GAME<span>ZONE</span></a>
+      <div class="game-title"><span class="brand-mark">SOS</span><div><h1>SOS Arena</h1><p>Think fast. Connect SOS. Score more.</p></div></div>
+      <span id="connection" class="connection">Connecting…</span>
+    </header>
+
+    <section id="lobby" class="panel lobby">
+      <div class="section-heading"><div><p class="eyebrow">MULTIPLAYER GAME</p><h2>Set up your match</h2></div><span class="pill">CUSTOM RULES</span></div>
+      <div class="lobby-grid">
+        <div class="setup-card">
+          <h3>Create a room</h3>
+          <label>Your name<input id="createName" maxlength="18" placeholder="Enter your name" value="Player 1"></label>
+          <div class="settings-grid">
+            <label>Board rows<select id="rows"><option>3</option><option selected>5</option><option>6</option><option>8</option><option>10</option><option>12</option><option>15</option></select></label>
+            <label>Board columns<select id="cols"><option>3</option><option selected>5</option><option>6</option><option>8</option><option>10</option><option>12</option><option>15</option></select></label>
+            <label>Players<select id="maxPlayers"><option value="2" selected>2 players</option><option value="3">3 players</option><option value="4">4 players</option></select></label>
+            <label>Touch control<select id="touchMode"><option value="single" selected>Single tap</option><option value="double">Double tap</option><option value="triple">Triple tap</option></select></label>
+            <label>Turn timer<select id="timer"><option value="0">Unlimited</option><option value="10">10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label>
+            <label>Win condition<select id="winCondition"><option value="board" selected>Fill the board</option><option value="target">Target score</option></select></label>
+            <label id="targetWrap" class="hidden">Target points<input id="targetScore" type="number" min="1" max="100" value="10"></label>
+          </div>
+          <div class="toggle-row"><div><b>Extra turn after SOS</b><small>Keep playing when your move creates one or more SOS lines.</small></div><input id="extraTurn" type="checkbox" checked></div>
+          <button id="createRoom" class="primary full">Create private room</button>
+        </div>
+        <div class="setup-card join-card">
+          <h3>Join a room</h3>
+          <p class="muted">Enter the room code shared by your friend.</p>
+          <label>Your name<input id="joinName" maxlength="18" placeholder="Enter your name"></label>
+          <label>Room code<input id="roomCode" maxlength="6" placeholder="ABC123" class="room-input"></label>
+          <button id="joinRoom" class="secondary full">Join room</button>
+          <div class="how-to"><b>How to play</b><ol><li>Choose S or O on your turn.</li><li>Tap an empty square using the room's touch setting.</li><li>Each new S-O-S line earns 1 point.</li><li>Make SOS to earn an extra turn when enabled.</li></ol></div>
+        </div>
+      </div>
+      <p id="lobbyError" class="error" role="alert"></p>
+    </section>
+
+    <section id="waiting" class="panel waiting hidden">
+      <div class="section-heading"><div><p class="eyebrow">ROOM CREATED</p><h2>Invite your friends</h2></div><span class="pill">WAITING ROOM</span></div>
+      <div class="room-code-box"><span>ROOM CODE</span><strong id="displayRoomCode">------</strong><button id="copyCode" class="small-btn">Copy</button></div>
+      <div id="waitingPlayers" class="player-list"></div>
+      <div id="hostSettings" class="host-settings"></div>
+      <p id="waitingHint" class="muted">Waiting for players to join…</p>
+      <button id="startGame" class="primary" disabled>Start game</button>
+      <button id="leaveWaiting" class="text-btn">Leave room</button>
+    </section>
+
+    <section id="game" class="hidden">
+      <div class="game-head panel">
+        <div><p class="eyebrow">ROOM <strong id="gameRoomCode"></strong></p><h2 id="turnLabel">Waiting for game…</h2><p id="turnSub" class="muted"></p></div>
+        <button id="leaveGame" class="text-btn">Leave game</button>
+      </div>
+      <div id="scoreboard" class="scoreboard"></div>
+      <div class="play-layout">
+        <section class="panel board-panel">
+          <div class="board-toolbar"><span id="boardLabel">5 × 5 BOARD</span><span id="timerLabel">No timer</span></div>
+          <div id="board" class="board" aria-label="SOS game board"></div>
+          <div class="letter-picker"><span>CHOOSE YOUR LETTER</span><div><button id="pickS" class="letter-btn selected">S</button><button id="pickO" class="letter-btn">O</button></div></div>
+          <p id="moveHint" class="muted center">Select a letter, then choose an empty cell.</p>
+        </section>
+        <aside class="side-column">
+          <section class="panel info-card"><h3>Match settings</h3><div id="matchSettings"></div></section>
+          <section class="panel info-card"><h3>Recent activity</h3><div id="activity" class="activity"><p class="muted">The match is ready.</p></div></section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="result" class="panel result hidden">
+      <div class="trophy">🏆</div><p class="eyebrow">MATCH COMPLETE</p><h2 id="winnerTitle">Game over</h2><p id="winnerSub" class="muted"></p>
+      <div id="finalScores" class="scoreboard"></div>
+      <p id="rematchStatus" class="muted">Want to play again?</p>
+      <div class="result-actions">
+        <button id="rematch" class="primary">Rematch</button>
+        <button id="acceptRematch" class="primary hidden">Accept</button>
+        <button id="declineRematch" class="secondary hidden">Decline</button>
+        <button id="backLobby" class="secondary">Back to lobby</button>
+      </div>
+    </section>
+    <div id="toast" class="toast" role="status"></div>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
