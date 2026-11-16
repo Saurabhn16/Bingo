@@ -8,61 +8,6 @@
 /* Player color picker */
 .color-field{margin:15px 0 17px}.color-label{display:block;color:#c7cbe0;font-size:12px;font-weight:700;margin-bottom:10px}.color-picker{display:flex;flex-wrap:wrap;gap:10px;padding:4px 1px}.color-swatch{width:29px;height:29px;flex:0 0 29px;border-radius:50%;padding:0;border:2px solid #ffffff30;background:var(--swatch);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.color-swatch:hover{transform:scale(1.14);box-shadow:0 0 13px var(--swatch)}.color-swatch.selected{border:3px solid #fff;outline:2px solid var(--swatch);outline-offset:3px;box-shadow:0 0 15px var(--swatch);transform:scale(1.08)}.color-swatch:focus-visible{outline:2px solid #fff;outline-offset:5px}
 
-/* =========================================
-   DOTS & BOXES - CLICKABLE LINE IMPROVEMENT
-   ========================================= */
-
-.game-board,
-#gameBoard,
-.board {
-    position: relative;
-    touch-action: manipulation;
-    user-select: none;
-}
-
-.edge {
-    position: relative !important;
-    cursor: pointer !important;
-    pointer-events: auto !important;
-    touch-action: manipulation;
-    z-index: 5;
-    transition: background .18s ease, box-shadow .18s ease;
-}
-
-/* Larger invisible hit area around each line */
-.edge::before {
-    content: "";
-    position: absolute;
-    inset: -9px;
-    cursor: pointer;
-    pointer-events: auto;
-}
-
-/* Make available lines easier to identify */
-.edge:not(.selected):not(.claimed):hover {
-    background: #35e6ff !important;
-    box-shadow: 0 0 12px rgba(53, 230, 255, .65);
-}
-
-/* Touch feedback */
-.edge:not(.selected):not(.claimed):active {
-    filter: brightness(1.6);
-}
-
-/* Keep dots visible above lines */
-.dot {
-    position: relative;
-    z-index: 6;
-}
-
-/* Prevent accidental text selection */
-.game-board *,
-#gameBoard *,
-.board * {
-    -webkit-tap-highlight-color: transparent;
-}
-
-
 /* ==========================================
    FIX: DOTS & BOXES BOARD ALIGNMENT
    ========================================== */

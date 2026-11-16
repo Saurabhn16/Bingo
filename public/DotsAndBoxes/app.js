@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const $ = id => document.getElementById(id);
   const socket = io();
   const COLORS = [
@@ -145,7 +145,7 @@ persistPlayerColor("joinColorPicker", "joinColor", "gz_join_player_color");
   });
   socket.on("disconnect", () => {
     $("connection").classList.remove("connected");
-    $("connection").innerHTML = "<i></i> Reconnectingâ€¦";
+    $("connection").innerHTML = "<i></i> Reconnecting…";
   });
   socket.on("connect_error", () => {
     $("connection").classList.remove("connected");
@@ -167,7 +167,7 @@ persistPlayerColor("joinColorPicker", "joinColor", "gz_join_player_color");
       <div class="player-row">
         <span class="avatar" style="background:${p.color}">${escapeHtml(p.name.slice(0,1).toUpperCase())}</span>
         <div><div class="player-name">${escapeHtml(p.name)}${p.id === identity.playerId ? " (You)" : ""}</div>
-        <div class="player-meta">${p.connected ? "Connected" : "Reconnectingâ€¦"}</div></div>
+        <div class="player-meta">${p.connected ? "Connected" : "Reconnecting…"}</div></div>
         ${p.host ? '<span class="player-tag">\u2605 LEADER</span>' : ""}
       </div>`).join("");
     const isHost = state.hostId === identity.playerId;
@@ -194,7 +194,7 @@ persistPlayerColor("joinColorPicker", "joinColor", "gz_join_player_color");
     $("scorePlayerCount").textContent = `${state.players.length} players`;
     $("scoreboard").innerHTML = state.players.map(p => `
       <div class="score-item ${p.id === identity.playerId ? "me" : ""}">
-        <div class="score-name"><i class="score-color" style="background:${p.color}"></i>${escapeHtml(p.name)}${p.id === identity.playerId ? " Â· YOU" : ""}</div>
+        <div class="score-name"><i class="score-color" style="background:${p.color}"></i>${escapeHtml(p.name)}${p.id === identity.playerId ? " · YOU" : ""}</div>
         <div class="score-value" style="color:${p.color}">${p.score}<small>boxes</small></div>
       </div>`).join("");
   }
@@ -202,17 +202,17 @@ persistPlayerColor("joinColorPicker", "joinColor", "gz_join_player_color");
     const current = state.players.find(p => p.id === state.currentTurn);
     const banner = $("turnBanner");
     if (state.status === "finished") {
-      banner.innerHTML = '<span class="turn-indicator"></span><strong>Game complete Â· Final scores are in</strong>';
+      banner.innerHTML = '<span class="turn-indicator"></span><strong>Game complete · Final scores are in</strong>';
       $("gameStatus").textContent = "Finished";
       return;
     }
     if (state.status === "paused" || !current) {
-      banner.innerHTML = '<span class="turn-indicator"></span><strong>Game paused Â· Waiting for players to reconnect</strong>';
+      banner.innerHTML = '<span class="turn-indicator"></span><strong>Game paused · Waiting for players to reconnect</strong>';
       $("gameStatus").textContent = "Paused";
       return;
     }
     const mine = current.id === identity.playerId;
-    banner.innerHTML = `<span class="turn-indicator" style="background:${current.color};box-shadow:0 0 12px ${current.color}"></span><strong>${mine ? "It's your turn!" : `${escapeHtml(current.name)}'s turn`}</strong><span style="margin-left:auto;color:#aab0ca">${mine ? "Choose a line" : "Waiting for moveâ€¦"}</span>`;
+    banner.innerHTML = `<span class="turn-indicator" style="background:${current.color};box-shadow:0 0 12px ${current.color}"></span><strong>${mine ? "It's your turn!" : `${escapeHtml(current.name)}'s turn`}</strong><span style="margin-left:auto;color:#aab0ca">${mine ? "Choose a line" : "Waiting for move…"}</span>`;
     $("gameStatus").textContent = "In progress";
   }
   function renderBoard() {
