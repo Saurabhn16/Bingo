@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b18">
+  <title>Tic-Tac-Toe | GameZone</title>
+  <link rel="stylesheet" href="tictactoe.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"> <span class="brand-mark">G</span> GameZone</a>
+    <nav><a href="/">Home</a><a href="/Bingo/bingo.html">Bingo Arena</a></nav>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">REAL-TIME · TWO PLAYER</p>
+      <h1>Tic-Tac-Toe <span>Arena</span></h1>
+      <p class="sub">A quick head-to-head. One room. One winner.</p>
+    </section>
+
+    <section id="lobby" class="panel lobby">
+      <div class="section-heading">
+        <div><p class="eyebrow">WELCOME TO THE ARENA</p><h2>Find your opponent</h2></div>
+        <span class="live-pill"><i></i> ONLINE PLAY</span>
+      </div>
+      <label for="nickname">Your nickname</label>
+      <input id="nickname" maxlength="20" autocomplete="nickname" placeholder="Enter your name">
+      <div class="lobby-actions">
+        <button id="createRoom" class="primary">Create private room</button>
+        <div class="join-box">
+          <input id="roomCode" maxlength="6" autocomplete="off" placeholder="ROOM CODE">
+          <button id="joinRoom" class="secondary">Join room</button>
+        </div>
+      </div>
+      <p id="lobbyMessage" class="message" role="status">Create a room and invite a friend, or join with their code.</p>
+      <div class="rules">
+        <div><b>3 × 3</b><span>Classic board</span></div>
+        <div><b>30 sec</b><span>Per turn</span></div>
+        <div><b>First to 3</b><span>In a row wins</span></div>
+      </div>
+    </section>
+
+    <section id="match" class="match-layout" hidden>
+      <div class="game-column">
+        <div class="panel room-panel">
+          <div><span class="eyebrow">PRIVATE ROOM</span><h2>Room <strong id="roomCodeLabel">------</strong></h2></div>
+          <button id="copyInvite" class="copy-button">Copy invite</button>
+        </div>
+
+        <div class="player-strip">
+          <article id="playerX" class="player-card active">
+            <div class="symbol x-symbol">X</div>
+            <div class="player-meta"><strong id="nameX">Player X</strong><small id="statusX">Waiting for player</small></div>
+            <span class="player-tag">X</span>
+          </article>
+          <div class="versus">VS</div>
+          <article id="playerO" class="player-card">
+            <div class="symbol o-symbol">O</div>
+            <div class="player-meta"><strong id="nameO">Waiting...</strong><small id="statusO">Not connected</small></div>
+            <span class="player-tag">O</span>
+          </article>
+        </div>
+
+        <div class="panel board-panel">
+          <div class="match-topline">
+            <div><span class="eyebrow">MATCH STATUS</span><h2 id="turnLabel">Waiting for opponent</h2></div>
+            <div class="timer"><span>TURN TIMER</span><strong id="timerValue">30</strong><small>seconds</small></div>
+          </div>
+          <div id="board" class="board" aria-label="Tic-Tac-Toe board">
+            <button class="square" data-index="0" aria-label="Cell 1"></button>
+            <button class="square" data-index="1" aria-label="Cell 2"></button>
+            <button class="square" data-index="2" aria-label="Cell 3"></button>
+            <button class="square" data-index="3" aria-label="Cell 4"></button>
+            <button class="square" data-index="4" aria-label="Cell 5"></button>
+            <button class="square" data-index="5" aria-label="Cell 6"></button>
+            <button class="square" data-index="6" aria-label="Cell 7"></button>
+            <button class="square" data-index="7" aria-label="Cell 8"></button>
+            <button class="square" data-index="8" aria-label="Cell 9"></button>
+          </div>
+          <div class="board-footer">
+            <p id="gameMessage">Waiting for both players to connect.</p>
+            <button id="startMatch" class="primary" hidden>Start match</button>
+            <button id="rematchButton" class="primary" hidden>Request rematch</button>
+          </div>
+        </div>
+
+        <div class="panel score-panel">
+          <div class="score-title"><div><span class="eyebrow">HEAD TO HEAD</span><h3>Match score</h3></div><span id="roundLabel" class="round-label">Round 1</span></div>
+          <div class="score-grid">
+            <div><strong id="winsX">0</strong><span id="scoreNameX">Player X</span><small>Wins</small></div>
+            <div><strong id="draws">0</strong><span>Draws</span><small>Shared</small></div>
+            <div><strong id="winsO">0</strong><span id="scoreNameO">Player O</span><small>Wins</small></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-column">
+        <section class="panel chat-panel">
+          <div class="chat-heading"><div><span class="eyebrow">SAY SOMETHING</span><h3>Room chat</h3></div><span class="chat-live">LIVE</span></div>
+          <div id="chatMessages" class="chat-messages" aria-live="polite"><p class="chat-empty">Messages from your opponent will appear here.</p></div>
+          <form id="chatForm" class="chat-form">
+            <input id="chatInput" maxlength="180" placeholder="Write a message..." autocomplete="off">
+            <button aria-label="Send message" type="submit">➤</button>
+          </form>
+          <div class="quick-reactions">
+            <button type="button" data-reaction="👏">👏</button>
+            <button type="button" data-reaction="🔥">🔥</button>
+            <button type="button" data-reaction="😂">😂</button>
+            <button type="button" data-reaction="😎">😎</button>
+            <button type="button" data-reaction="GG!">GG!</button>
+          </div>
+        </section>
+        <section class="panel how-panel">
+          <span class="eyebrow">HOW TO PLAY</span>
+          <h3>Three in a row wins.</h3>
+          <p>Take turns placing your symbol. Complete a horizontal, vertical or diagonal line of three before your opponent.</p>
+          <div class="legend"><span class="x-symbol">X</span> First move <span class="o-symbol">O</span> Second move</div>
+        </section>
+        <button id="leaveRoom" class="leave-button">Leave room</button>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="tictactoe.js"></script>
+</body>
+</html>

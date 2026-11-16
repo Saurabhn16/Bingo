@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bingo Arena - GameZone</title>
+<link rel="stylesheet" href="bingo.css">
+</head>
+<body>
+<header><a href="/" class="brand">🎮 GameZone</a><a href="/">← Home</a></header>
+<main class="wrap">
+<p class="eyebrow">REAL-TIME MULTIPLAYER</p>
+<h1>Bingo <span>Arena</span></h1>
+<p class="muted">Create your board. Challenge a friend. First to five lines wins.</p>
+
+<section id="setup" class="panel">
+<label>Your nickname</label>
+<input id="nickname" placeholder="Enter your name" maxlength="20">
+
+<h3>Board creation</h3>
+<div class="choices">
+<label><input type="radio" name="method" value="random" checked> Random board</label>
+<label><input type="radio" name="method" value="manual"> Manual board</label>
+</div>
+
+<h3>Board distribution</h3>
+<div class="choices">
+<label><input type="radio" name="style" value="different" checked> Different boards</label>
+<label><input type="radio" name="style" value="same"> Same board</label>
+</div>
+
+<div class="setup-actions">
+<button id="shuffle">Shuffle board</button>
+<button id="reset">Reset board</button>
+</div>
+<p id="setupHint" class="muted">Random mode automatically shuffles numbers 1–25.</p>
+<div id="preview" class="board preview"></div>
+
+<div class="actions">
+<button id="create">Create room</button>
+</div>
+<div class="join-row">
+<input id="roomCode" placeholder="ROOM CODE">
+<button id="join">Join room</button>
+</div>
+<p id="message" role="status">Choose your board and create or join a room.</p>
+</section>
+
+<section id="game" class="panel" hidden>
+<div class="room-head">ROOM <strong id="code"></strong><button id="copy">Copy code</button></div>
+<div class="players"><div id="p1"></div><div id="p2"></div></div>
+<div id="bingoLetters" class="bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div><h2 id="turn">Waiting for opponent</h2>
+<p id="score" class="muted"></p>
+<button id="start">Start match</button>
+<div id="board" class="board"></div>
+<p class="hint">Tap an unmarked number on your turn. Both players see the same marked numbers.</p>
+<button id="leave" class="secondary">Leave room</button>
+</section>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="bingo.js"></script>
+</body>
+</html>
+
