@@ -259,7 +259,7 @@ function renderFinalResults(winner) {
   result.innerHTML = "";
 
   const heading = document.createElement("h2");
-  heading.textContent = `ðŸ† ${winner.name} WINS!`;
+  heading.textContent = `\u{1F3C6} ${winner.name} WINS!`;
   result.appendChild(heading);
 
   const subtitle = document.createElement("p");
@@ -468,6 +468,7 @@ socket.on("disconnect", () => {
 shuffleBoard();
 $("setup").hidden = false;
 $("game").hidden = true;
+
 
 
 
