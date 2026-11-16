@@ -1,4 +1,4 @@
-﻿const socket = io();
+const socket = io("https://bingo-512e.onrender.com");
 const $ = id => document.getElementById(id);
 
 let room = null;
