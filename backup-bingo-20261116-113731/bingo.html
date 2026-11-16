@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0915">
+  <title>Bingo Arena | GameZone</title>
+  <link rel="stylesheet" href="/bingo.css">
+</head>
+<body>
+  <main class="game-container">
+    <header class="game-header">
+      <a href="/" class="logo">GAME<span>ZONE</span></a>
+      <span class="game-label">BINGO ARENA</span>
+    </header>
+
+    <section id="setupSection" class="screen">
+      <div class="welcome-card">
+        <span class="eyebrow">TWO PLAYER • REAL-TIME</span>
+        <h1>Let's Play <span>Bingo!</span></h1>
+        <p>Create a room and invite a friend to play.</p>
+        <label for="nicknameInput">Your nickname</label>
+        <input id="nicknameInput" type="text" placeholder="Enter nickname (2–16 characters)" maxlength="16" autocomplete="nickname">
+        <button id="createRoomBtn" class="primary-btn">Create Room</button>
+        <div class="section-divider"><span>OR JOIN A ROOM</span></div>
+        <label for="roomCodeInput">Room code</label>
+        <input id="roomCodeInput" type="text" placeholder="Enter 6-character code" maxlength="6" autocomplete="off">
+        <button id="joinRoomBtn" class="secondary-btn">Join Room</button>
+        <p id="setupMessage" class="message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="lobbySection" class="screen hidden">
+      <div class="lobby-card">
+        <span class="eyebrow">ROOM LOBBY</span>
+        <h1>Waiting Room</h1>
+        <p>Share this code with your friend.</p>
+        <div class="room-code">
+          <strong id="roomCodeDisplay">------</strong>
+          <button id="copyRoomCodeBtn" class="copy-btn" type="button">Copy</button>
+        </div>
+        <div class="players-area">
+          <h2>Players <span id="playerCount">0/2</span></h2>
+          <div id="playersList" class="players-list"></div>
+        </div>
+        <p id="lobbyMessage" class="message" role="status" aria-live="polite">Waiting for another player...</p>
+        <button id="startMatchBtn" class="primary-btn" disabled>Start Game</button>
+        <button id="leaveRoomBtn" class="secondary-btn">Leave Room</button>
+      </div>
+    </section>
+
+    <section id="gameSection" class="screen hidden">
+      <div class="game-topbar">
+        <span class="eyebrow">BINGO ARENA</span>
+        <span class="room-pill">ROOM <strong id="gameRoomCode">------</strong></span>
+      </div>
+
+      <div id="turnStatus" class="turn-status">
+        <h1 id="turnTitle">WAITING...</h1>
+        <p id="turnSubtitle">Waiting for the game to start.</p>
+      </div>
+
+      <div class="score-container">
+        <article class="score-card active-player">
+          <span class="player-label">YOU</span>
+          <h3 id="myPlayerName">Player</h3>
+          <p><strong id="myMarkedCount">0</strong><span>/25 marked</span></p>
+        </article>
+        <article class="score-card">
+          <span class="player-label">OPPONENT</span>
+          <h3 id="opponentName">Waiting...</h3>
+          <p><strong id="opponentMarkedCount">0</strong><span>/25 marked</span></p>
+        </article>
+      </div>
+
+      <div class="board-container">
+        <div class="board-heading">
+          <div><h2>Your Board</h2><p id="boardInstruction">Select a number when it is your turn.</p></div>
+          <span class="board-count"><strong id="myMarkedCountBadge">0</strong>/25</span>
+        </div>
+        <div class="bingo-letters" aria-hidden="true"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+        <div class="bingo-board" id="bingoBoard" aria-label="Your Bingo board"></div>
+      </div>
+
+      <div class="activity-card">
+        <h2>Game Activity</h2>
+        <ol id="matchActivity"><li>Game activity will appear here.</li></ol>
+      </div>
+
+      <div id="resultSection" class="result-section hidden" role="status">
+        <span class="eyebrow">MATCH COMPLETE</span>
+        <h2 id="resultTitle">BINGO!</h2>
+        <p id="resultMessage"></p>
+        <button id="backToSetupBtn" class="primary-btn">Back to Game Lobby</button>
+      </div>
+      <button id="leaveGameBtn" class="secondary-btn leave-game-btn">Leave Game</button>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/bingo.js"></script>
+</body>
+</html>
