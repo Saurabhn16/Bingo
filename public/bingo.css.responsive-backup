@@ -1,0 +1,519 @@
+﻿*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% 0%,#39205d66,transparent 50%),#080817;color:#f7f4ff;font-family:Inter,Arial,sans-serif}
+header{height:70px;padding:0 6%;border-bottom:1px solid #ffffff18;display:flex;align-items:center;justify-content:space-between}
+header a{color:white;text-decoration:none}.brand{font-weight:800;font-size:20px}
+.wrap{width:min(620px,94%);margin:35px auto;text-align:center}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#b792ff;font-weight:800}
+h1{font-size:43px;margin:10px}h1 span{color:#bb8aff}
+.muted{color:#aaa6c0;font-size:13px;line-height:1.6}
+.panel{background:#14142b;border:1px solid #ffffff18;border-radius:17px;padding:23px;margin-top:22px;text-align:left}
+label{display:block;color:#c5b9df;font-size:12px;margin-bottom:8px}
+input:not([type=radio]){width:100%;padding:12px;border:1px solid #ffffff22;background:#09091b;color:white;border-radius:8px;margin-bottom:12px}
+h3{font-size:14px;margin:17px 0 10px}
+.choices{display:flex;gap:15px;flex-wrap:wrap}.choices label{display:flex;align-items:center;gap:7px;background:#ffffff0b;border:1px solid #ffffff18;padding:11px;border-radius:8px}
+button{cursor:pointer;color:white;background:linear-gradient(100deg,#8750e6,#b44ee9);border:0;padding:11px 16px;border-radius:8px;font-weight:700}
+.setup-actions,.actions,.join-row{display:flex;gap:10px;margin-top:12px}.join-row input{flex:1;min-width:0}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-width:420px;margin:23px auto}
+.cell{aspect-ratio:1;background:#24203d;border:1px solid #ffffff20;border-radius:9px;color:white;font-size:19px;font-weight:800}
+.cell.marked{background:#159b68;border-color:#5bf0b0}
+.cell:disabled{cursor:not-allowed;opacity:1}
+.preview .cell{cursor:pointer}
+.preview .cell.selected{border:2px solid #bd91ff;background:#48316c}
+.room-head,.players{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.players{margin:20px 0}.players div{background:#ffffff0b;border:1px solid #ffffff17;border-radius:8px;padding:12px;flex:1;font-size:12px}
+.players .active{border-color:#a779ff;background:#8750e622}
+#turn{text-align:center;color:#c9a5ff;margin:22px 0 5px}
+#score{text-align:center}
+#start{display:block;margin:15px auto}
+.hint{text-align:center;color:#aaa6c0;font-size:12px}
+.secondary{display:block;margin:18px auto;background:#ffffff12}
+@media(max-width:450px){.panel{padding:15px}.board{gap:5px}.cell{font-size:16px}.choices{gap:6px}}
+
+.bingo-letters{display:flex;justify-content:center;gap:15px;margin:22px auto}.bingo-letters span{font-size:32px;font-weight:900;color:#c49aff;position:relative}.bingo-letters span.cut{color:#25d99a;text-decoration:line-through;text-decoration-thickness:4px;opacity:.65}
+
+/* Multiplayer player cards */
+.players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.player-card,
+.final-player-card {
+  padding: 14px;
+  margin: 10px 0;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+}
+
+/* Winner results preview */
+.final-results {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid rgba(168,85,247,.4);
+  border-radius: 18px;
+  background: rgba(35,25,65,.75);
+}
+
+.final-results > h2 {
+  text-align: center;
+  color: #facc15;
+}
+
+.final-results > p {
+  text-align: center;
+  opacity: .8;
+}
+
+.final-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  max-width: 320px;
+}
+
+.final-cell {
+  min-width: 0;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: #303149;
+  color: white;
+  font-weight: 700;
+}
+
+.final-cell.marked {
+  background: #16834e;
+}
+
+.final-cell.winning-cell {
+  outline: 3px solid #facc15;
+  outline-offset: -3px;
+  box-shadow: 0 0 10px rgba(250,204,21,.4);
+}
+
+.play-again {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 24px auto 5px;
+  padding: 15px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#9333ea,#6d28d9);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.play-again:hover {
+  filter: brightness(1.15);
+}
+
+.play-again:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+@media(max-width:480px) {
+  .final-results {
+    padding: 12px;
+  }
+
+  .final-board {
+    gap: 4px;
+  }
+
+  .final-cell {
+    font-size: 13px;
+  }
+}
+
+/* =========================================
+   BINGO ARENA - UI IMPROVEMENTS
+   ========================================= */
+
+/* Keep hidden elements genuinely hidden */
+[hidden] {
+  display: none !important;
+}
+
+/* Wider centered page */
+.wrap {
+  width: min(1100px, calc(100% - 40px)) !important;
+  max-width: 1100px !important;
+  margin: 35px auto !important;
+}
+
+/* Better panel spacing */
+.panel {
+  padding: 24px !important;
+  border-radius: 18px !important;
+}
+
+/* Game desktop layout */
+#game {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+  grid-template-areas:
+    "head head"
+    "letters players"
+    "turn players"
+    "score players"
+    "start players"
+    "board players"
+    "hint players"
+    "leave leave"
+    "results results";
+  gap: 16px 24px;
+  align-items: start;
+}
+
+/* Game sections */
+#game .room-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#game .players {
+  grid-area: players;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-content: start;
+}
+
+#game .bingo-letters {
+  grid-area: letters;
+  justify-content: center;
+  gap: 20px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 5px;
+}
+
+#game #turn {
+  grid-area: turn;
+  text-align: center;
+  margin: 4px 0;
+  font-size: clamp(22px, 3vw, 32px);
+}
+
+#game #score {
+  grid-area: score;
+  text-align: center;
+  line-height: 1.8;
+}
+
+#game #start {
+  grid-area: start;
+  justify-self: center;
+  min-width: 180px;
+}
+
+#game #board {
+  grid-area: board;
+  width: min(100%, 540px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px auto;
+}
+
+#game .hint {
+  grid-area: hint;
+  text-align: center;
+  line-height: 1.7;
+}
+
+#game #leave {
+  grid-area: leave;
+  justify-self: center;
+  min-width: 150px;
+}
+
+#game #finalResults {
+  grid-area: results;
+}
+
+/* Bigger Bingo cells */
+#game #board .cell {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: clamp(15px, 2vw, 23px);
+  font-weight: 800;
+  border-radius: 12px;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+#game #board .cell:not(:disabled):hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 0 16px rgba(168,85,247,.45);
+}
+
+/* Player cards */
+#game .player-card {
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(167,139,250,.25);
+  background: linear-gradient(145deg, #211b38, #171529);
+  transition: border-color .2s ease, transform .2s ease;
+}
+
+#game .player-card:hover {
+  border-color: #a855f7;
+  transform: translateY(-2px);
+}
+
+#game .player-card strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+#game .player-card p {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
+/* Winner result section */
+#finalResults {
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+  border: 1px solid rgba(168,85,247,.6);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at top, rgba(124,58,237,.2), transparent 65%),
+    #171329;
+  box-shadow: 0 0 35px rgba(124,58,237,.12);
+  animation: winnerReveal .55s ease both;
+}
+
+#finalResults > h2 {
+  text-align: center;
+  color: #facc15;
+  font-size: clamp(25px, 4vw, 38px);
+  margin: 5px 0 12px;
+  text-shadow: 0 0 18px rgba(250,204,21,.35);
+}
+
+#finalResults > p {
+  text-align: center;
+  color: #c4b5fd;
+  letter-spacing: 2px;
+  font-size: 12px;
+  margin-bottom: 24px;
+}
+
+/* Final player boards in responsive grid */
+#finalResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+#finalResults > h2,
+#finalResults > p,
+#finalResults > .play-again {
+  grid-column: 1 / -1;
+}
+
+.final-player-card {
+  padding: 16px;
+  border: 1px solid rgba(167,139,250,.3);
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+  min-width: 0;
+}
+
+.final-player-card h3 {
+  color: #ddd6fe;
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+/* Final 5x5 board */
+.final-board {
+  width: min(100%, 330px);
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.final-cell {
+  min-width: 0;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #302b46;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform .2s ease;
+}
+
+.final-cell.marked {
+  background: linear-gradient(145deg, #10b981, #047857);
+}
+
+.final-cell.winning-cell {
+  outline: 3px solid #facc15;
+  outline-offset: -3px;
+  box-shadow: 0 0 12px rgba(250,204,21,.5);
+  animation: winningPulse 1.4s ease-in-out infinite alternate;
+}
+
+/* Play Again button */
+.play-again {
+  display: block;
+  width: min(100%, 300px);
+  justify-self: center;
+  margin: 10px auto 4px;
+  padding: 16px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #9333ea, #6d28d9);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(124,58,237,.3);
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.play-again:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.2);
+}
+
+.play-again:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+/* Winner celebration effect */
+#finalResults::before {
+  content: "✦  ✨  ★  ✦  ✨  ★  ✦";
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #facc15;
+  opacity: .45;
+  letter-spacing: 15px;
+  pointer-events: none;
+  animation: celebrationGlow 2s ease-in-out infinite alternate;
+}
+
+/* Animations */
+@keyframes winnerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes winningPulse {
+  from { box-shadow: 0 0 5px rgba(250,204,21,.25); }
+  to { box-shadow: 0 0 16px rgba(250,204,21,.7); }
+}
+
+@keyframes celebrationGlow {
+  from { opacity: .25; }
+  to { opacity: .8; }
+}
+
+/* Mobile layout */
+@media (max-width: 760px) {
+  .wrap {
+    width: calc(100% - 24px) !important;
+    margin: 20px auto !important;
+  }
+
+  .panel {
+    padding: 16px !important;
+  }
+
+  #game {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "players"
+      "letters"
+      "turn"
+      "score"
+      "start"
+      "board"
+      "hint"
+      "leave"
+      "results";
+    gap: 12px;
+  }
+
+  #game .players {
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  }
+
+  #game #board {
+    gap: 7px;
+  }
+
+  #game #board .cell {
+    border-radius: 9px;
+  }
+
+  #finalResults {
+    padding: 16px;
+    grid-template-columns: 1fr;
+  }
+
+  .final-player-card {
+    width: 100%;
+  }
+
+  .final-board {
+    width: min(100%, 320px);
+  }
+}
+
+/* BINGO letters crossed out as lines are completed */
+#bingoLetters span.completed {
+  color: #777087;
+  text-decoration: line-through;
+  text-decoration-color: #facc15;
+  text-decoration-thickness: 4px;
+  opacity: .55;
+  transform: scale(.9);
+  transition: all .3s ease;
+}
+
+/* Current player's name crossed out after completing a line */
+.player-card.you strong.player-completed {
+  text-decoration: line-through;
+  text-decoration-color: #facc15;
+  text-decoration-thickness: 3px;
+  opacity: .6;
+  transition: all .3s ease;
+}

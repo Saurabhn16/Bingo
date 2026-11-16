@@ -1,13 +1,34 @@
+﻿<<<<<<< HEAD
 const socket = io("https://bingo-512e.onrender.com");
+=======
+ï»¿// Update BINGO letters and the current player's name.
+function updateBingoLetters(lineCount) {
+  const count = Math.max(0, Math.min(5, Number(lineCount) || 0));
+
+  document.querySelectorAll("#bingoLetters span").forEach((letter, index) => {
+    letter.classList.toggle("completed", index < count);
+  });
+
+  const myCard = document.querySelector(".player-card.you");
+  const myName = myCard?.querySelector("strong");
+
+  if (myName) {
+    myName.classList.toggle("player-completed", count > 0);
+  }
+}
+
+const socket = io();
+>>>>>>> 4bc70cf (Improve Bingo Arena UI and responsive design)
 const $ = id => document.getElementById(id);
 let board = Array.from({ length: 25 }, (_, i) => i + 1);
+let room = null;
 let roomCode = null;
 let playerId = null;
 let playerToken = null;
-let room = null;
 let selectedCell = null;
+let audioContext = null;
 
-function randomBoard() {
+function shuffleBoard() {
   board = Array.from({ length: 25 }, (_, i) => i + 1);
 
   for (let i = board.length - 1; i > 0; i--) {
@@ -23,24 +44,25 @@ function renderPreview() {
   const preview = $("preview");
   preview.innerHTML = "";
 
-  board.forEach((n, i) => {
+  board.forEach((number, index) => {
     const cell = document.createElement("button");
-    cell.className = "cell";
-    cell.textContent = n;
     cell.type = "button";
+    cell.className = "cell";
+    cell.textContent = number;
+
+    if (selectedCell === index) cell.classList.add("selected");
 
     cell.onclick = () => {
-      if (document.querySelector('input[name="method"]:checked').value !== "manual")
-        return;
+      if (selectedValue("method") !== "manual") return;
 
       if (selectedCell === null) {
-        selectedCell = i;
-        cell.classList.add("selected");
-        return;
+        selectedCell = index;
+      } else {
+        [board[selectedCell], board[index]] =
+          [board[index], board[selectedCell]];
+        selectedCell = null;
       }
 
-      [board[selectedCell], board[i]] = [board[i], board[selectedCell]];
-      selectedCell = null;
       renderPreview();
     };
 
@@ -48,60 +70,43 @@ function renderPreview() {
   });
 }
 
-$("shuffle").onclick = randomBoard;
-$("reset").onclick = randomBoard;
-
-document.querySelectorAll('input[name="method"]').forEach(r =>
-  r.addEventListener("change", () => {
-    const manual = document.querySelector('input[name="method"]:checked').value === "manual";
-
-    $("setupHint").textContent = manual
-      ? "Tap one cell, then another to swap their numbers."
-      : "Random mode automatically shuffles numbers 1–25.";
-
-    if (!manual) randomBoard();
-  })
-);
-
-function message(t) {
-  $("message").textContent = t;
+function selectedValue(name) {
+  return document.querySelector(`input[name="${name}"]:checked`).value;
 }
 
-async function request(url, data) {
-  const res = await fetch(url, {
+function message(text) {
+  $("message").textContent = text;
+}
+
+async function request(url, body = {}) {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify(body)
   });
 
-  const result = await res.json();
+  const data = await response.json();
 
-  if (!res.ok) throw new Error(result.error || "Request failed");
+  if (!response.ok)
+    throw new Error(data.error || "Request failed.");
 
-  return result;
+  return data;
 }
 
-function setupPayload(code = "") {
-  return {
-    name: $("nickname").value.trim(),
-    board: [...board],
-    boardStyle: document.querySelector('input[name="style"]:checked').value,
-    playerToken: code
-      ? localStorage.getItem("bingo-token-" + code.toUpperCase()) || ""
-      : ""
-  };
-}
-
-async function enter(data) {
-  roomCode = data.room.code;
+function saveMembership(data) {
+  room = data.room;
   playerId = data.playerId;
   playerToken = data.playerToken;
+  roomCode = data.room.code;
 
-  localStorage.setItem("bingo-token-" + roomCode, playerToken);
+  localStorage.setItem("bingo-" + roomCode, JSON.stringify({
+    playerId,
+    playerToken
+  }));
+}
 
-  $("setup").hidden = true;
-  $("game").hidden = false;
-  $("code").textContent = roomCode;
+function subscribe() {
+  if (!roomCode || !playerId || !playerToken) return;
 
   socket.emit("room:subscribe", {
     code: roomCode,
@@ -110,200 +115,369 @@ async function enter(data) {
   });
 }
 
-$("create").onclick = async () => {
-  try {
-    const data = await request("/api/rooms", setupPayload());
-    await enter(data);
-  } catch (e) {
-    message(e.message);
-  }
-};
+function connectRoom() {
+  if (socket.connected) subscribe();
+  else socket.connect();
+}
 
-$("join").onclick = async () => {
+async function createRoom() {
+  try {
+    const data = await request("/api/rooms", {
+      name: $("nickname").value.trim(),
+      board,
+      boardStyle: selectedValue("style")
+    });
+
+    saveMembership(data);
+    connectRoom();
+    message("Room created! Share the code with your friends.");
+  } catch (error) {
+    message(error.message);
+  }
+}
+
+async function joinRoom() {
   try {
     const code = $("roomCode").value.trim().toUpperCase();
-    const data = await request(
-      "/api/rooms/" + code + "/join",
-      setupPayload(code)
-    );
 
-    await enter(data);
-  } catch (e) {
-    message(e.message);
-  }
-};
-
-$("start").onclick = () => socket.emit("match:start");
-
-$("copy").onclick = async () => {
-  await navigator.clipboard.writeText(roomCode);
-  $("copy").textContent = "Copied!";
-};
-
-$("leave").onclick = () => location.reload();
-
-socket.on("room:state", state => {
-  room = state;
-  renderGame();
-});
-
-socket.on("game:error", text => {
-  $("turn").textContent = text;
-});
-
-function renderPlayers() {
-  let list = $("playersList");
-
-  if (!list) {
-    list = document.createElement("div");
-    list.id = "playersList";
-    list.style.display = "grid";
-    list.style.gridTemplateColumns = "repeat(auto-fit, minmax(125px, 1fr))";
-    list.style.gap = "10px";
-    list.style.margin = "15px 0";
-
-    $("board").parentNode.insertBefore(list, $("board"));
-  }
-
-  list.innerHTML = "";
-
-  room.players.forEach((p, index) => {
-    const card = document.createElement("div");
-
-    card.style.padding = "12px";
-    card.style.borderRadius = "10px";
-    card.style.background = room.currentTurn === p.id && room.started
-      ? "#39245f" : "#202033";
-    card.style.border = room.currentTurn === p.id && room.started
-      ? "2px solid #a78bfa" : "1px solid #444";
-
-    const name = document.createElement("div");
-    name.textContent = (p.host ? "👑 " : "🎮 ") + p.name;
-    name.style.fontWeight = "bold";
-
-    const lines = document.createElement("div");
-    lines.textContent = `${p.lineCount}/5 lines`;
-    lines.style.marginTop = "5px";
-
-    const status = document.createElement("div");
-    status.style.fontSize = "12px";
-    status.style.marginTop = "5px";
-
-    if (room.winner === p.id) {
-      status.textContent = "🏆 WINNER";
-    } else if (p.forfeited) {
-      status.textContent = "FORFEITED";
-    } else if (!p.connected) {
-      status.textContent = "DISCONNECTED";
-    } else if (room.currentTurn === p.id && room.started) {
-      status.textContent = "YOUR TURN";
-    } else if (!room.started) {
-      status.textContent = p.host ? "HOST" : "READY";
-    } else {
-      status.textContent = "WAITING";
+    if (!code) {
+      message("Please enter a room code.");
+      return;
     }
 
-    card.append(name, lines, status);
-    list.appendChild(card);
+    const saved = localStorage.getItem("bingo-" + code);
+    const membership = saved ? JSON.parse(saved) : {};
+
+    const data = await request(
+      "/api/rooms/" + encodeURIComponent(code) + "/join",
+      {
+        name: $("nickname").value.trim(),
+        board,
+        playerToken: membership.playerToken || ""
+      }
+    );
+
+    saveMembership(data);
+    connectRoom();
+    message("Successfully joined room " + code);
+  } catch (error) {
+    message(error.message);
+  }
+}
+
+// Browser-generated game audio. No external audio files required.
+function playSound(frequencies) {
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) return;
+
+    if (!audioContext) audioContext = new Audio();
+
+    if (audioContext.state === "suspended") audioContext.resume();
+
+    frequencies.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const start = audioContext.currentTime + index * 0.13;
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+
+      gain.gain.setValueAtTime(0.001, start);
+      gain.gain.exponentialRampToValueAtTime(0.12, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+
+      oscillator.start(start);
+      oscillator.stop(start + 0.24);
+    });
+  } catch (error) {
+    console.warn("Audio unavailable:", error);
+  }
+}
+
+function renderPlayers() {
+  const container = document.querySelector(".players");
+  container.innerHTML = "";
+
+  room.players.forEach(player => {
+    const card = document.createElement("div");
+    card.className = "player-card" + (player.id === playerId ? " you" : "");;
+
+    const name = document.createElement("strong");
+    name.textContent =
+      `${player.host ? "ðŸ‘‘ " : "ðŸŽ® "}${player.name}` +
+      (player.id === playerId ? " (YOU)" : "");
+
+    const status = document.createElement("p");
+    status.textContent = player.forfeited
+      ? "Forfeited"
+      : player.connected ? "Connected" : "Disconnected";
+
+    const lines = document.createElement("small");
+    lines.textContent = `${player.lineCount}/5 lines`;
+
+    card.append(name, status, lines);
+    container.appendChild(card);
   });
 }
 
-function renderGame() {
-  if (!room) return;
+function renderBoard(me, winner) {
+  const container = $("board");
+  container.innerHTML = "";
 
-  const me = room.players.find(p => p.id === playerId);
-  if (!me) return;
+  room.called = room.called || [];
 
-  // Remove the old two-player boxes and show the current player's identity.
-  $("p1").hidden = true;
-  $("p2").hidden = true;
-
-  let identity = $("myPlayerIdentity");
-
-  if (!identity) {
-    identity = document.createElement("div");
-    identity.id = "myPlayerIdentity";
-
-    identity.style.width = "100%";
-    identity.style.boxSizing = "border-box";
-    identity.style.padding = "13px 18px";
-    identity.style.margin = "12px 0 20px";
-    identity.style.borderRadius = "12px";
-    identity.style.background = "#30204d";
-    identity.style.border = "1px solid #a78bfa";
-    identity.style.color = "#d8b4fe";
-    identity.style.fontSize = "20px";
-    identity.style.fontWeight = "bold";
-    identity.style.textAlign = "center";
-
-    $("p1").parentElement.insertBefore(identity, $("p1"));
-  }
-
-  const myPosition = room.players.findIndex(p => p.id === playerId) + 1;
-  identity.textContent = `YOU ARE PLAYER ${myPosition}`;
-
-  const canStart =
-    !room.started &&
-    room.players.filter(p => p.connected && !p.forfeited).length >= 2 &&
-    me.host;
-
-  $("start").hidden = !canStart;
-  $("start").style.display = canStart ? "block" : "none";
-  $("start").disabled = !canStart;
-
-  const winner = room.players.find(p => p.id === room.winner);
-
-  if (winner) {
-    $("turn").textContent = winner.id === playerId
-      ? "YOU WIN! 🎉"
-      : `${winner.name} WINS! 🏆`;
-  } else if (!room.started) {
-    $("turn").textContent = `${room.players.length} player slots used. Waiting for host to start.`;
-  } else if (me.forfeited) {
-    $("turn").textContent = "YOU HAVE FORFEITED THIS MATCH";
-  } else if (!me.connected) {
-    $("turn").textContent = "DISCONNECTED";
-  } else if (room.currentTurn === playerId) {
-    $("turn").textContent = "IT'S YOUR TURN!";
-  } else {
-    const current = room.players.find(p => p.id === room.currentTurn);
-    $("turn").textContent = current
-      ? `${current.name}'S TURN`
-      : "MATCH FINISHED";
-  }
-
-  $("score").textContent = room.players
-    .map(p => `${p.name}: ${p.lineCount}/5`)
-    .join(" · ");
-
-  const letters = $("bingoLetters")?.querySelectorAll("span") || [];
-  letters.forEach((letter, i) =>
-    letter.classList.toggle("cut", i < me.lineCount)
-  );
-
-  renderPlayers();
-
-  const boardElement = $("board");
-  boardElement.innerHTML = "";
-
-  me.board.forEach(n => {
+  me.board.forEach(number => {
     const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "cell";
+    cell.textContent = number;
 
-    cell.className = "cell" + (room.called.includes(n) ? " marked" : "");
-    cell.textContent = n;
+    if (room.called.includes(number))
+      cell.classList.add("marked");
 
     cell.disabled =
       !room.started ||
+      !!winner ||
       me.forfeited ||
-      !me.connected ||
       room.currentTurn !== playerId ||
-      !!room.winner ||
-      room.called.includes(n);
+      room.called.includes(number);
 
-    cell.onclick = () => socket.emit("match:mark", n);
-    boardElement.appendChild(cell);
+    cell.onclick = () => {
+      if (cell.disabled) return;
+      socket.emit("match:mark", number);
+    };
+
+    container.appendChild(cell);
   });
 }
 
-randomBoard();
+// Final preview: every player's board and completed winning lines.
+function renderFinalResults(winner) {
+  let result = $("finalResults");
+
+  if (!result) {
+    result = document.createElement("section");
+    result.id = "finalResults";
+    result.className = "final-results";
+    $("game").appendChild(result);
+  }
+
+  result.innerHTML = "";
+
+  const heading = document.createElement("h2");
+  heading.textContent = `ðŸ† ${winner.name} WINS!`;
+  result.appendChild(heading);
+
+  const subtitle = document.createElement("p");
+  subtitle.textContent = "FINAL MATCH RESULTS";
+  result.appendChild(subtitle);
+
+  room.players.forEach(player => {
+    const card = document.createElement("div");
+    card.className = "final-player-card";
+
+    const title = document.createElement("h3");
+    title.textContent = `${player.name} â€” ${player.lineCount}/5 lines`;
+    card.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "final-board";
+
+    const winningCells = new Set(player.winningCells || []);
+
+    player.board.forEach((number, index) => {
+      const cell = document.createElement("div");
+      cell.className = "final-cell";
+      cell.textContent = number;
+
+      if (room.called.includes(number))
+        cell.classList.add("marked");
+
+      if (winningCells.has(index))
+        cell.classList.add("winning-cell");
+
+      grid.appendChild(cell);
+    });
+
+    card.appendChild(grid);
+    result.appendChild(card);
+  });
+
+  const me = room.players.find(p => p.id === playerId);
+  if (me) updateBingoLetters(me.lineCount);
+  const active = room.players.filter(p => p.connected && !p.forfeited);
+
+  // Play Again is displayed inside the final results preview.
+  if (me?.host && active.length >= 2) {
+    const replay = document.createElement("button");
+    replay.id = "playAgainButton";
+    replay.className = "play-again";
+    replay.textContent = "ðŸ”„ PLAY AGAIN";
+
+    replay.onclick = () => {
+      replay.disabled = true;
+      replay.textContent = "STARTING NEW GAME...";
+      socket.emit("match:playAgain");
+    };
+
+    result.appendChild(replay);
+  }
+}
+
+function renderRoom() {
+  if (!room) return;
+
+  $("code").textContent = room.code;
+  renderPlayers();
+
+  const me = room.players.find(p => p.id === playerId);
+  if (me) updateBingoLetters(me.lineCount);
+  if (!me) return;
+
+  const active = room.players.filter(p => p.connected && !p.forfeited);
+  const start = $("start");
+
+  start.hidden = room.started || !me.host || active.length < 2;
+  start.disabled = start.hidden;
+
+  if (!room.started) {
+    $("turn").textContent = "Waiting for players";
+    $("score").textContent =
+      `${active.length}/5 connected players. Host can start with 2 or more.`;
+    return;
+  }
+
+  const winner = room.players.find(p => p.id === room.winner);
+  const current = room.players.find(p => p.id === room.currentTurn);
+
+  if (winner) {
+    $("turn").textContent =
+      winner.id === playerId ? "YOU WIN! ðŸ†" : `${winner.name} WINS! ðŸ†`;
+
+    $("score").textContent = "Game completed! Check the final boards below.";
+
+    renderBoard(me, winner);
+    renderFinalResults(winner);
+    return;
+  }
+
+  $("finalResults")?.remove();
+
+  if (me.forfeited) {
+    $("turn").textContent = "YOU FORFEITED THIS MATCH";
+  } else if (room.currentTurn === playerId) {
+    $("turn").textContent = "YOUR TURN â€” PICK A NUMBER";
+  } else {
+    $("turn").textContent = current
+      ? `${current.name}'S TURN`
+      : "WAITING...";
+  }
+
+  $("score").textContent = room.players
+    .map(p => `${p.name}: ${p.lineCount}/5 lines`)
+    .join("  |  ");
+
+  renderBoard(me, null);
+}
+
+// ==========================================
+// BUTTONS AND EVENTS
+// ==========================================
+
+$("shuffle").onclick = shuffleBoard;
+
+$("reset").onclick = () => {
+  board = Array.from({ length: 25 }, (_, i) => i + 1);
+  selectedCell = null;
+  renderPreview();
+};
+
+document.querySelectorAll('input[name="method"]').forEach(input => {
+  input.addEventListener("change", () => {
+    const manual = selectedValue("method") === "manual";
+
+    $("setupHint").textContent = manual
+      ? "Select one cell and then another to swap their numbers."
+      : "Random mode automatically shuffles numbers 1â€“25.";
+
+    if (!manual) shuffleBoard();
+  });
+});
+
+$("create").onclick = createRoom;
+$("join").onclick = joinRoom;
+
+$("start").onclick = () => {
+  socket.emit("match:start");
+};
+
+$("copy").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(roomCode);
+    $("copy").textContent = "Copied!";
+  } catch {
+    message("Copy the room code manually: " + roomCode);
+  }
+};
+
+$("leave").onclick = () => {
+  socket.disconnect();
+
+  if (roomCode)
+    localStorage.removeItem("bingo-" + roomCode);
+
+  location.reload();
+};
+
+$("roomCode").addEventListener("input", event => {
+  event.target.value = event.target.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+});
+
+socket.on("connect", () => {
+  subscribe();
+});
+
+socket.on("room:state", state => {
+  const previous = room;
+  const previousWinner = previous?.winner;
+  const previousCalled = previous?.called?.length || 0;
+
+  room = state;
+
+  $("setup").hidden = true;
+  $("game").hidden = false;
+
+  renderRoom();
+
+  if (state.winner && !previousWinner) {
+    playSound([523, 659, 784, 1047]);
+  } else if (state.called.length > previousCalled) {
+    playSound([520]);
+  }
+});
+
+socket.on("game:error", error => {
+  message(typeof error === "string" ? error : "Game error.");
+});
+
+socket.on("connect_error", () => {
+  message("Could not connect to the game server.");
+});
+
+socket.on("disconnect", () => {
+  if (room)
+    $("turn").textContent = "Connection lost. Reconnecting...";
+});
+
+shuffleBoard();
+$("setup").hidden = false;
+$("game").hidden = true;
+
+
 

@@ -13,6 +13,12 @@ app.use(express.static("public"));
 
 const makeCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 const makeToken = () => crypto.randomBytes(32).toString("hex");
+const makeId = () => crypto.randomUUID();
+
+function cleanName(value, fallback) {
+  const name = String(value || "").trim().replace(/\s+/g, " ").slice(0, 20);
+  return name || fallback;
+}
 
 const validBoard = b =>
   Array.isArray(b) &&
@@ -20,7 +26,7 @@ const validBoard = b =>
   new Set(b).size === 25 &&
   b.every(n => Number.isInteger(n) && n >= 1 && n <= 25);
 
-function winningLines(board, called) {
+function getWinningLines(board, called) {
   const marked = new Set(
     board.map((n, i) => called.includes(n) ? i : -1).filter(i => i >= 0)
   );
@@ -33,9 +39,10 @@ function winningLines(board, called) {
   for (let c = 0; c < 5; c++)
     lines.push(Array.from({ length: 5 }, (_, r) => r * 5 + c));
 
-  lines.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
+  lines.push([0, 6, 12, 18, 24]);
+  lines.push([4, 8, 12, 16, 20]);
 
-  return lines.filter(line => line.every(i => marked.has(i))).length;
+  return lines.filter(line => line.every(i => marked.has(i)));
 }
 
 function activePlayers(room) {
@@ -45,19 +52,26 @@ function activePlayers(room) {
 function view(room) {
   return {
     code: room.code,
+    hostId: room.hostId,
     started: room.started,
     currentTurn: room.currentTurn,
     winner: room.winner,
-    called: room.called,
-    players: room.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      board: p.board,
-      lineCount: winningLines(p.board, room.called),
-      connected: p.connected,
-      forfeited: p.forfeited,
-      host: p.id === room.hostId
-    }))
+    called: [...room.called],
+    players: room.players.map(p => {
+      const lines = getWinningLines(p.board, room.called);
+
+      return {
+        id: p.id,
+        name: p.name,
+        board: [...p.board],
+        lineCount: lines.length,
+        winningLines: lines,
+        winningCells: [...new Set(lines.flat())],
+        connected: p.connected,
+        forfeited: p.forfeited,
+        host: p.id === room.hostId
+      };
+    })
   };
 }
 
@@ -65,8 +79,13 @@ function broadcast(room) {
   io.to(room.code).emit("room:state", view(room));
 }
 
-function advanceAfterForfeit(room) {
+function advanceTurn(room, previousId) {
   const active = activePlayers(room);
+
+  if (active.length === 0) {
+    room.currentTurn = null;
+    return;
+  }
 
   if (active.length === 1) {
     room.winner = active[0].id;
@@ -74,19 +93,15 @@ function advanceAfterForfeit(room) {
     return;
   }
 
-  if (active.length === 0) {
-    room.currentTurn = null;
-    return;
-  }
+  const index = room.players.findIndex(p => p.id === previousId);
 
-  if (!active.some(p => p.id === room.currentTurn)) {
-    const oldIndex = room.players.findIndex(p => p.id === room.currentTurn);
-    const next = room.players
-      .slice(oldIndex + 1)
-      .concat(room.players.slice(0, oldIndex + 1))
-      .find(p => p.connected && !p.forfeited);
+  for (let step = 1; step <= room.players.length; step++) {
+    const next = room.players[(index + step) % room.players.length];
 
-    room.currentTurn = next ? next.id : active[0].id;
+    if (next.connected && !next.forfeited) {
+      room.currentTurn = next.id;
+      return;
+    }
   }
 }
 
@@ -102,10 +117,8 @@ function attachPlayer(room, player, socket) {
   socket.join(room.code);
   socket.data.code = room.code;
   socket.data.playerId = player.id;
-  socket.data.playerToken = player.token;
 
   broadcast(room);
-  socket.emit("room:state", view(room));
 }
 
 app.get("/api/health", (req, res) => {
@@ -113,16 +126,19 @@ app.get("/api/health", (req, res) => {
 });
 
 app.post("/api/rooms", (req, res) => {
-  const board = validBoard(req.body.board)
-    ? req.body.board
-    : Array.from({ length: 25 }, (_, i) => i + 1);
+  let code;
 
-  const code = makeCode();
+  do {
+    code = makeCode();
+  } while (rooms.has(code));
+
   const player = {
-    id: crypto.randomUUID(),
+    id: makeId(),
     token: makeToken(),
-    name: "Player 1",
-    board,
+    name: cleanName(req.body.name, "Player 1"),
+    board: validBoard(req.body.board)
+      ? [...req.body.board]
+      : Array.from({ length: 25 }, (_, i) => i + 1),
     connected: false,
     forfeited: false,
     socketId: null
@@ -152,23 +168,18 @@ app.post("/api/rooms/:code/join", (req, res) => {
   const room = rooms.get(req.params.code.toUpperCase());
 
   if (!room)
-    return res.status(404).json({ error: "Room not found" });
+    return res.status(404).json({ error: "Room not found." });
 
-  const suppliedToken = String(req.body.playerToken || "");
+  const token = String(req.body.playerToken || "");
 
-  // Rejoining an existing player slot
-  if (suppliedToken) {
-    const existing = room.players.find(p => p.token === suppliedToken);
+  if (token) {
+    const existing = room.players.find(p => p.token === token);
 
     if (existing) {
-      if (existing.forfeited && room.started) {
-        return res.json({
-          room: view(room),
-          playerId: existing.id,
-          playerToken: existing.token,
-          forfeited: true
-        });
-      }
+      existing.name = cleanName(req.body.name, existing.name);
+
+      if (existing.forfeited)
+        return res.status(403).json({ error: "You forfeited this match." });
 
       return res.json({
         room: view(room),
@@ -185,20 +196,20 @@ app.post("/api/rooms/:code/join", (req, res) => {
 
   if (room.players.length >= 5)
     return res.status(400).json({
-      error: "Room is full. Maximum 5 player slots allowed."
+      error: "Room is full. Maximum 5 players."
     });
 
   let board = validBoard(req.body.board)
-    ? req.body.board
+    ? [...req.body.board]
     : Array.from({ length: 25 }, (_, i) => i + 1);
 
   if (room.boardStyle === "same")
     board = [...room.players[0].board];
 
   const player = {
-    id: crypto.randomUUID(),
+    id: makeId(),
     token: makeToken(),
-    name: `Player ${room.players.length + 1}`,
+    name: cleanName(req.body.name, `Player ${room.players.length + 1}`),
     board,
     connected: false,
     forfeited: false,
@@ -212,6 +223,8 @@ app.post("/api/rooms/:code/join", (req, res) => {
     playerId: player.id,
     playerToken: player.token
   });
+
+  broadcast(room);
 });
 
 io.on("connection", socket => {
@@ -219,16 +232,27 @@ io.on("connection", socket => {
     const room = rooms.get(String(code || "").toUpperCase());
 
     if (!room)
-      return socket.emit("game:error", "Room not found");
+      return socket.emit("game:error", "Room not found.");
 
     const player = room.players.find(
       p => p.id === playerId && p.token === playerToken
     );
 
     if (!player)
-      return socket.emit("game:error", "Player identity could not be verified");
+      return socket.emit("game:error", "Player identity could not be verified.");
 
-    attachPlayer(room, player, socket);
+    if (player.forfeited)
+      return socket.emit("game:error", "You have forfeited this match.");
+
+    player.token = playerToken;
+    player.socketId = socket.id;
+    player.connected = true;
+
+    socket.join(room.code);
+    socket.data.code = room.code;
+    socket.data.playerId = player.id;
+
+    broadcast(room);
   });
 
   socket.on("match:start", () => {
@@ -236,12 +260,12 @@ io.on("connection", socket => {
     if (!room || room.started) return;
 
     if (socket.data.playerId !== room.hostId)
-      return socket.emit("game:error", "Only the host can start the match");
+      return socket.emit("game:error", "Only the host can start the match.");
 
     const active = activePlayers(room);
 
     if (active.length < 2)
-      return socket.emit("game:error", "At least 2 connected players are required");
+      return socket.emit("game:error", "At least 2 connected players are required.");
 
     room.started = true;
     room.called = [];
@@ -257,31 +281,43 @@ io.on("connection", socket => {
 
     const player = room.players.find(p => p.id === socket.data.playerId);
 
-    if (!player || player.forfeited || !player.connected) return;
+    if (!player || !player.connected || player.forfeited) return;
 
     if (room.currentTurn !== player.id)
-      return socket.emit("game:error", "Wait for your turn");
+      return socket.emit("game:error", "Wait for your turn.");
 
-    if (!Number.isInteger(number) || number < 1 || number > 25)
-      return;
-
+    if (!Number.isInteger(number) || number < 1 || number > 25) return;
     if (room.called.includes(number)) return;
 
     room.called.push(number);
 
-    if (winningLines(player.board, room.called) >= 5) {
+    if (getWinningLines(player.board, room.called).length >= 5) {
       room.winner = player.id;
       room.currentTurn = null;
     } else {
-      const index = room.players.findIndex(p => p.id === player.id);
-
-      const next = room.players
-        .slice(index + 1)
-        .concat(room.players.slice(0, index + 1))
-        .find(p => p.connected && !p.forfeited);
-
-      room.currentTurn = next ? next.id : null;
+      advanceTurn(room, player.id);
     }
+
+    broadcast(room);
+  });
+
+  // Host starts another round without leaving the room.
+  socket.on("match:playAgain", () => {
+    const room = rooms.get(socket.data.code);
+
+    if (!room || !room.started || !room.winner) return;
+
+    if (socket.data.playerId !== room.hostId)
+      return socket.emit("game:error", "Only the host can start a new game.");
+
+    const active = activePlayers(room);
+
+    if (active.length < 2)
+      return socket.emit("game:error", "At least 2 active players are required.");
+
+    room.called = [];
+    room.winner = null;
+    room.currentTurn = active[0].id;
 
     broadcast(room);
   });
@@ -292,7 +328,6 @@ io.on("connection", socket => {
 
     const player = room.players.find(p => p.id === socket.data.playerId);
 
-    // Ignore disconnects from an older socket after a rejoin
     if (!player || player.socketId !== socket.id) return;
 
     player.connected = false;
@@ -300,7 +335,7 @@ io.on("connection", socket => {
 
     if (room.started && !room.winner) {
       player.forfeited = true;
-      advanceAfterForfeit(room);
+      advanceTurn(room, player.id);
     }
 
     broadcast(room);
@@ -308,6 +343,14 @@ io.on("connection", socket => {
 });
 
 const PORT = process.env.PORT || 3000;
+<<<<<<< HEAD
 server.listen(PORT, "0.0.0.0", () => {
   console.log("GameZone running on port " + PORT);
+=======
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("Bingo server running on port " + PORT);
+>>>>>>> 4bc70cf (Improve Bingo Arena UI and responsive design)
 });
+
+
