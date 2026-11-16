@@ -198,10 +198,9 @@ function renderPlayers() {
 
     const name = document.createElement("strong");
     name.textContent =
-      `${player.host ? "ðŸ‘‘ " : "ðŸŽ® "}${player.name}` +
-      (player.id === playerId ? " (YOU)" : "");
-
-    const status = document.createElement("p");
+  `${"\u{1F451} "}${player.name}` +
+  (player.id === playerId ? " (YOU)" : "");
+const status = document.createElement("p");
     status.textContent = player.forfeited
       ? "Forfeited"
       : player.connected ? "Connected" : "Disconnected";
@@ -468,6 +467,7 @@ socket.on("disconnect", () => {
 shuffleBoard();
 $("setup").hidden = false;
 $("game").hidden = true;
+
 
 
 
